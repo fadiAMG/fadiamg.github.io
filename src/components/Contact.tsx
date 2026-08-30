@@ -57,7 +57,7 @@ export default function Contact() {
           <span className="font-mono text-[10px] font-light uppercase text-dim">CV</span>
           <a
             href="/cv/fadi-thomas-cv.pdf"
-            download
+            download="Fadi-Thomas-CV.pdf"
             className="inline-flex min-h-11 items-center py-2.5 font-mono text-xs font-medium no-underline transition-colors hover:text-ink2"
             style={{ color: "var(--ink1)" }}
           >

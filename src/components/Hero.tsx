@@ -156,7 +156,7 @@ export default function Hero() {
           <div className="flex flex-wrap items-center gap-2.5">
             <a
               href="/cv/fadi-thomas-cv.pdf"
-              download
+              download="Fadi-Thomas-CV.pdf"
               className="inline-flex min-h-12 items-center gap-2 bg-ink1 px-5 py-4 font-mono text-[10px] font-medium uppercase text-on-ink no-underline transition-colors hover:bg-ink2"
             >
               Download CV ↓
