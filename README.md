@@ -1,36 +1,164 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# fadiamg.github.io
 
-## Getting Started
+Personal portfolio site — **[fadiamg.github.io](https://fadiamg.github.io)**
 
-First, run the development server:
+Static Next.js site, deployed to GitHub Pages automatically on every push to `main`.
+Content lives in one data file, so updating the site means editing text, not components.
+
+![Portfolio](docs/preview.png)
+
+---
+
+## Stack
+
+| | |
+|---|---|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Animation | Motion, anime.js |
+| Fonts | Bricolage Grotesque, Familjen Grotesk, Martian Mono (`next/font`) |
+| Output | Static export (`output: "export"`) — no server, no runtime |
+| Hosting | GitHub Pages via GitHub Actions |
+
+---
+
+## Running locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+npm run build    # production build + static export → out/
+npm run lint     # eslint
+npx tsc --noEmit # typecheck
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Node 22+ recommended (the deploy workflow pins 22).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Making it yours
 
-To learn more about Next.js, take a look at the following resources:
+Almost everything is data, not markup.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Content
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+All copy lives in [`src/data/resume.ts`](src/data/resume.ts):
 
-## Deploy on Vercel
+```ts
+identity   // name, positioning line, location, hook, links
+profile    // the "about" lead and paragraphs
+focusAreas // the three-column capability grid
+experience // roles, dates, bullet points
+projects   // selected work
+skills     // grouped technical skills
+education  // degrees
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Edit that file and the whole site follows. No component changes needed.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Colours and type
+
+Design tokens are CSS custom properties at the top of
+[`src/app/globals.css`](src/app/globals.css) — one block for light, one for dark:
+
+```css
+--bg      /* page background   */
+--fg      /* body text         */
+--dim     /* secondary text    */
+--ink1    /* primary accent    */
+--ink2    /* secondary accent  */
+--hair    /* hairline borders  */
+```
+
+Change those six values and the entire site re-themes, including dark mode.
+Fonts are declared in [`src/lib/fonts.ts`](src/lib/fonts.ts).
+
+### CV
+
+Replace `public/cv/fadi-thomas-cv.pdf`. The filename is referenced in
+`Hero.tsx` and `Contact.tsx`; keep it or update both.
+
+> **Check what you're publishing.** Anything in `public/` is served at a
+> guessable URL and is fully text-extractable. See [Privacy](#privacy) below.
+
+---
+
+## Project structure
+
+```
+src/
+  app/
+    layout.tsx          root layout, metadata, theme bootstrap
+    page.tsx            section composition
+    globals.css         design tokens + base styles
+    favicon.ico         browser tab icon
+    apple-icon.png      iOS home screen icon
+    opengraph-image.png social preview card
+  components/           one file per section
+  data/resume.ts        ← all content lives here
+  lib/
+    fonts.ts            font loading
+    theme.ts            no-flash theme bootstrap script
+    motion-preference.ts  respects prefers-reduced-motion
+public/
+  cv/                   downloadable CV
+  .nojekyll             stops GitHub Pages running Jekyll on the output
+```
+
+---
+
+## Deployment
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs on every push
+to `main`: `npm ci` → `npm run build` → upload `out/` → deploy to Pages.
+
+**One-time setup:** Settings → Pages → Source → **GitHub Actions**
+(*not* "Deploy from a branch" — that ignores the workflow).
+
+The workflow uses least-privilege permissions (`contents: read`, `pages: write`,
+`id-token: write`) and holds no secrets.
+
+---
+
+## Privacy
+
+The site is public, so treat everything in it as public.
+
+- **Email is not in the HTML.** It's split across two fields in `resume.ts` and
+  reassembled in the browser, so it never appears in the static markup that
+  scrapers read.
+- **The CV is a different story.** `public/cv/*.pdf` is served at a fixed,
+  guessable URL and its text — including any phone number and email in the
+  header — extracts in one command. If you don't want a phone number public,
+  publish a CV variant without it and keep the full one for direct applications.
+- **No secrets, keys, or env files** are tracked, and `.gitignore` covers
+  `.env*` and `*.pem`.
+
+---
+
+## Accessibility
+
+- Skip link to main content
+- `prefers-reduced-motion` respected throughout (`src/lib/motion-preference.ts`)
+- Minimum 44px touch targets on interactive elements
+- Theme set before first paint, so there is no flash on load
+
+---
+
+## Roadmap
+
+- [ ] **Per-role variants** — build targeted versions of the site from the same
+      content, emphasising different experience per application
+- [ ] **Theme presets** — swap the whole palette from one config value
+- [ ] **Layout options** — alternative section orders and hero treatments
+
+---
+
+## License
+
+Code is MIT. Content — CV, copy, and personal details — is not; please don't
+republish it as your own.
