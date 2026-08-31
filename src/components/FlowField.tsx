@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePrefersReducedMotion } from "@/lib/motion-preference";
+import { useChapter } from "@/lib/chapter";
 
 /**
  * Generative flow-field backdrop.
@@ -10,9 +11,10 @@ import { usePrefersReducedMotion } from "@/lib/motion-preference";
  * seeded value noise, tracing curved paths that accumulate into a soft weave.
  * The field itself never renders — only the trails particles leave in it.
  *
- * Cheap by construction: one canvas, no per-frame allocation, trails fade via a
- * translucent fill rather than a full clear, and the whole loop parks itself
- * when scrolled out of view or when the tab is hidden.
+ * Cheap by construction: one canvas, no per-frame allocation, trails dissolve
+ * via a destination-out wash rather than a full clear, and the loop parks
+ * itself whenever its chapter is not the one in frame, the canvas is off
+ * screen, or the tab is hidden.
  */
 
 /** Seeded value noise — deterministic, so the composition is stable per load. */
@@ -56,7 +58,7 @@ function makeNoise(seed: number) {
 
 type P = { x: number; y: number; px: number; py: number; life: number; hue: number };
 
-const COUNT = 300;
+const COUNT = 220;
 const NOISE_SCALE = 0.0016;
 const SPEED = 0.72;
 const MAX_LIFE = 380;
@@ -64,6 +66,7 @@ const MAX_LIFE = 380;
 export default function FlowField({ className = "" }: { className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const reduced = usePrefersReducedMotion();
+  const { active, inDeck } = useChapter();
 
   useEffect(() => {
     const canvas = ref.current;
@@ -77,7 +80,7 @@ export default function FlowField({ className = "" }: { className?: string }) {
     let dpr = 1;
     let raf = 0;
     let t = 0;
-    let visible = true;
+    let visible = !inDeck || active;
     const particles: P[] = [];
 
     // Palette is read from the live CSS custom properties, so the field
@@ -105,7 +108,9 @@ export default function FlowField({ className = "" }: { className?: string }) {
     };
 
     const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      // Capped at 1.5 rather than 2: this is a diffuse texture, so the extra
+      // pixels cost fill-rate every frame and buy nothing visible.
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       w = canvas.clientWidth;
       h = canvas.clientHeight;
       canvas.width = Math.floor(w * dpr);
@@ -181,13 +186,18 @@ export default function FlowField({ className = "" }: { className?: string }) {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
+    // In the deck the sticky panel is always technically on screen, so an
+    // IntersectionObserver alone would never park the loop — the canvas would
+    // repaint for the whole visit. Chapter activity is the real signal there.
     const io = new IntersectionObserver(
-      ([e]) => { visible = e.isIntersecting; },
+      ([e]) => { visible = e.isIntersecting && (!inDeck || active); },
       { rootMargin: "120px" },
     );
     io.observe(canvas);
 
-    const onVisibility = () => { visible = !document.hidden; };
+    // Must re-apply the chapter gate, not just the tab state — otherwise
+    // returning to the tab would restart the loop for every chapter at once.
+    const onVisibility = () => { visible = !document.hidden && (!inDeck || active); };
     document.addEventListener("visibilitychange", onVisibility);
 
     const themeObserver = new MutationObserver(() => { readInks(); readBg(); });
@@ -203,7 +213,7 @@ export default function FlowField({ className = "" }: { className?: string }) {
       themeObserver.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [reduced]);
+  }, [reduced, active, inDeck]);
 
   return (
     <canvas

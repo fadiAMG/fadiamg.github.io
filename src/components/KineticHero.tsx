@@ -2,16 +2,18 @@
 
 import { useEffect, useRef } from "react";
 import { animate, createTimeline, splitText, stagger, utils } from "animejs";
-import { motion, useScroll, useTransform } from "motion/react";
 
 import { usePrefersReducedMotion } from "@/lib/motion-preference";
+import { useChapter } from "@/lib/chapter";
 import FlowField from "./FlowField";
 import Magnetic from "./Magnetic";
 import { useLocale } from "@/lib/locale";
 
 /**
- * Hero: masked per-character type reveal over a generative flow field, with the
- * whole block drifting on scroll.
+ * Hero: masked per-character type reveal over a generative flow field.
+ *
+ * The reveal replays each time the chapter becomes active, so returning to it
+ * plays the animation rather than showing a finished frame.
  *
  * anime.js `splitText` with `chars: { wrap: true }` emits an overflow-clipped
  * wrapper per character, which is what makes the line-reveal read as type
@@ -24,16 +26,17 @@ export default function KineticHero() {
   const identity = t.identity;
   const root = useRef<HTMLElement>(null);
   const reduced = usePrefersReducedMotion();
+  const { active } = useChapter();
 
-  const { scrollYProgress } = useScroll({
-    target: root,
-    offset: ["start start", "end start"],
-  });
-  const driftY = useTransform(scrollYProgress, [0, 1], [0, 140]);
-  const fade = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
+  // The scroll-linked drift and fade this used to have are gone. Inside the
+  // deck the hero sits in a sticky panel that never moves vertically, so its
+  // scrollYProgress never advances — the values were inert at best and jittery
+  // at worst, which is what made the first chapter feel broken.
 
   useEffect(() => {
-    if (reduced) return;
+    // Replays whenever the chapter becomes active, so returning to the hero
+    // plays the type reveal again instead of showing a finished frame.
+    if (reduced || !active) return;
     const el = root.current;
     if (!el) return;
 
@@ -80,7 +83,7 @@ export default function KineticHero() {
       tl.revert();
       splits.forEach((s) => s.revert());
     };
-  }, [reduced]);
+  }, [reduced, active]);
 
   return (
     <section
@@ -89,10 +92,7 @@ export default function KineticHero() {
     >
       <FlowField className="opacity-[0.55]" />
 
-      <motion.div
-        style={reduced ? undefined : { y: driftY, opacity: fade }}
-        className="relative z-10 mx-auto w-full max-w-[1500px]"
-      >
+      <div className="relative z-10 mx-auto w-full max-w-[1500px]">
         <p
           data-split-words
           className="font-mono text-[clamp(10px,1.1vw,13px)] uppercase tracking-[0.22em] text-dim"
@@ -152,7 +152,7 @@ export default function KineticHero() {
             </span>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       <ScrollCue reduced={reduced} label={t.ui.scroll} />
     </section>

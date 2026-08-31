@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { motion, useScroll, useSpring, useTransform } from "motion/react";
 import { usePrefersReducedMotion } from "@/lib/motion-preference";
+import { ChapterProvider } from "@/lib/chapter";
 
 /**
  * Horizontal chapter spine.
@@ -211,9 +212,11 @@ export default function HorizontalDeck({ chapters }: { chapters: Chapter[] }) {
   if (!horizontal) {
     return (
       <>
-        {chapters.map((c) => (
+        {chapters.map((c, i) => (
           <section key={c.id} id={c.id}>
-            {c.node}
+            <ChapterProvider index={i} active inDeck={false}>
+              {c.node}
+            </ChapterProvider>
           </section>
         ))}
       </>
@@ -225,14 +228,16 @@ export default function HorizontalDeck({ chapters }: { chapters: Chapter[] }) {
       <div ref={outer} style={{ height: `${totalSpan * TRAVEL_VH}vh` }} className="relative">
         <div className="sticky top-0 h-[100svh] overflow-hidden">
           <motion.div ref={track} style={{ x }} className="flex h-full w-max will-change-transform">
-            {chapters.map((c) => (
+            {chapters.map((c, i) => (
               <section
                 key={c.id}
                 id={c.id}
                 style={{ width: `${(c.span ?? 1) * 100}vw` }}
                 className="relative flex h-full shrink-0 flex-col justify-center overflow-hidden px-[clamp(24px,5vw,80px)] pb-[clamp(90px,12vh,130px)] pt-[clamp(70px,10vh,110px)]"
               >
-                {c.node}
+                <ChapterProvider index={i} active={i === active} inDeck>
+                  {c.node}
+                </ChapterProvider>
               </section>
             ))}
           </motion.div>

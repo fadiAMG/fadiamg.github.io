@@ -6,6 +6,7 @@ import { animate, stagger, svg, utils } from "animejs";
 import { useEffect } from "react";
 import { generate, VIEWBOX, type ShapeName } from "@/lib/shapes";
 import { usePrefersReducedMotion } from "@/lib/motion-preference";
+import { useChapter } from "@/lib/chapter";
 
 /**
  * Renders one generative pattern as inline SVG.
@@ -39,12 +40,15 @@ export default function ShapeField({
   const prims = useMemo(() => generate(name, seed), [name, seed]);
   const wrap = useRef<HTMLDivElement>(null);
   const reduced = usePrefersReducedMotion();
+  const { active } = useChapter();
 
   const { scrollYProgress } = useScroll();
   const x = useTransform(scrollYProgress, [0, 1], [0, drift]);
 
   useEffect(() => {
-    if (reduced) return;
+    // Redraws whenever the chapter becomes active, so arriving at a chapter
+    // draws its pattern on rather than showing one that finished long ago.
+    if (reduced || !active) return;
     const el = wrap.current;
     if (!el) return;
 
@@ -53,17 +57,23 @@ export default function ShapeField({
 
     utils.set(fills, { scale: 0, transformOrigin: "center" });
 
+    // Stagger step is derived from the element count so the whole pattern
+    // finishes inside a fixed window. A constant step meant the denser
+    // generators (isometric emits ~300 paths) were still drawing four seconds
+    // after arrival — far longer than anyone waits on a chapter.
+    const stepFor = (n: number, windowMs: number) => (n > 1 ? windowMs / n : 0);
+
     const drawn = animate(svg.createDrawable(strokes), {
       draw: ["0 0", "0 1"],
-      duration: 2200,
-      delay: stagger(9, { from: "center" }),
+      duration: 1100,
+      delay: stagger(stepFor(strokes.length, 700), { from: "center" }),
       ease: "inOut(2)",
     });
 
     const popped = animate(fills, {
       scale: [0, 1],
-      duration: 900,
-      delay: stagger(4, { from: "center" }),
+      duration: 700,
+      delay: stagger(stepFor(fills.length, 600), { from: "center" }),
       ease: "out(3)",
     });
 
@@ -71,7 +81,7 @@ export default function ShapeField({
       drawn.revert();
       popped.revert();
     };
-  }, [reduced, name, seed]);
+  }, [reduced, active, name, seed]);
 
   const maskImage =
     mask === "none"

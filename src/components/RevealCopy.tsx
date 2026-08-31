@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { usePrefersReducedMotion } from "@/lib/motion-preference";
+import { useChapter } from "@/lib/chapter";
 
 /**
  * Word-by-word reading reveal.
@@ -32,7 +33,12 @@ export default function RevealCopy({
   const reduced = usePrefersReducedMotion();
   // `once` so the copy never re-dims after it has been read — re-running the
   // reveal on every re-entry reads as a glitch.
-  const inView = useInView(ref, { once: true, amount: 0.25 });
+  const { active, inDeck } = useChapter();
+  // In the deck, arrival is the trigger and the reveal replays every visit.
+  // In the vertical fallback there is no arrival event, so it stays one-shot
+  // on scroll-into-view — re-dimming on every pass would read as a glitch.
+  const inView = useInView(ref, { once: !inDeck, amount: 0.25 });
+  const show = inDeck ? active : inView;
 
   if (reduced) {
     return <p className={className}>{text}</p>;
@@ -47,7 +53,7 @@ export default function RevealCopy({
           <motion.span
             className="inline-block"
             initial={{ opacity: 0.14, y: "0.14em" }}
-            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0.14, y: "0.14em" }}
+            animate={show ? { opacity: 1, y: 0 } : { opacity: 0.14, y: "0.14em" }}
             transition={{
               duration: 0.5,
               delay: i * 0.022,
