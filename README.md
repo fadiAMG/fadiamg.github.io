@@ -1,9 +1,10 @@
 # fadiamg.github.io
 
-Personal portfolio site — **[fadiamg.github.io](https://fadiamg.github.io)**
+Personal portfolio — **[fadiamg.github.io](https://fadiamg.github.io)** · **[/de](https://fadiamg.github.io/de/)**
 
-Static Next.js site, deployed to GitHub Pages automatically on every push to `main`.
-Content lives in one data file, so updating the site means editing text, not components.
+A statically-exported Next.js site that navigates sideways: eight full-screen
+chapters on a horizontal spine, each with its own generative pattern. Deployed
+to GitHub Pages on every push.
 
 ![Portfolio](docs/preview.png)
 
@@ -16,9 +17,10 @@ Content lives in one data file, so updating the site means editing text, not com
 | Framework | Next.js 16 (App Router, Turbopack) |
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 |
-| Animation | Motion, anime.js |
-| Fonts | Bricolage Grotesque, Familjen Grotesk, Martian Mono (`next/font`) |
-| Output | Static export (`output: "export"`) — no server, no runtime |
+| Motion | [Motion](https://motion.dev) for scroll and gesture, [anime.js v4](https://animejs.com) for text and timelines |
+| Patterns | Hand-written SVG generators, after [Book of Shapes](https://bookofshapes.com) |
+| Fonts | Bricolage Grotesque, Familjen Grotesk, Martian Mono |
+| Output | Static export — no server, no runtime |
 | Hosting | GitHub Pages via GitHub Actions |
 
 ---
@@ -32,81 +34,117 @@ npm run dev      # http://localhost:3000
 
 ```bash
 npm run build    # production build + static export → out/
-npm run lint     # eslint
-npx tsc --noEmit # typecheck
+npm run lint
+npx tsc --noEmit
 ```
 
-Node 22+ recommended (the deploy workflow pins 22).
+Node 22+ (the deploy workflow pins 22).
+
+---
+
+## How it works
+
+### The deck
+
+`HorizontalDeck` is the core idea. A tall spacer supplies scroll distance, a
+sticky viewport holds the track, and vertical scroll progress maps to
+horizontal translation.
+
+Nothing is hijacked — the page is still, mechanically, scrolling down. Wheel,
+trackpad, scrollbar and keyboard all keep working, so the deck can't trap
+anyone. Scrolling settles onto the nearest chapter once it stops, so you never
+come to rest between two.
+
+**It falls back to ordinary vertical stacking** on narrow or coarse-pointer
+devices and under `prefers-reduced-motion`. Horizontal scroll is hostile on
+phones, so the fallback is the default and the deck is the enhancement.
+
+Two knobs, both at the top of the file: `TRAVEL_VH` (scroll cost per chapter)
+and the settle debounce.
+
+### Chapter replay
+
+Every chapter mounts at page load, so anything animating on mount would fire
+for all of them at once — arriving at chapter six would show an animation that
+finished minutes earlier.
+
+`lib/chapter.tsx` carries an activity signal instead. Chapters replay their
+entry animation each time they come into frame, and animation loops park
+themselves when their chapter isn't the one you're looking at.
+
+### Shapes
+
+`lib/shapes.ts` has six generators, one per chapter: truchet tiles,
+phyllotaxis, isometric cubes, Joy Division mesh, radial interference, and
+lissajous curves.
+
+Each is a pure function of a seed — no `Math.random`, no `Date` — so the server
+and the client emit identical markup and React never reports a hydration
+mismatch. `ShapeField` draws the strokes on with anime.js `svg.createDrawable`,
+and masks each pattern away from the reading column. Unmasked, they run
+straight through body copy and cost more legibility than they add atmosphere.
+
+### Experience dial
+
+Roles sit on the arc of a large circle whose centre is off-screen. Selecting
+one rotates the arc to the reading line and expands its detail sideways.
+
+An accordion would have been the obvious choice and the wrong one: the panel is
+exactly one viewport tall, and an accordion grows downward — the one direction
+with no room.
 
 ---
 
 ## Languages
 
-The site ships in English at `/` and German at `/de/`, each statically built
-with its own `<html lang>` and reciprocal `hreflang` tags.
+English at `/`, German at `/de/`. Two statically-built pages, each with its own
+`<html lang>` and reciprocal `hreflang`, so both get indexed and either can be
+linked directly.
 
-- `src/data/resume.ts` — CV content, English. Still the single editing surface.
-- `src/data/content.en.ts` / `content.de.ts` — one object per locale.
-- `src/data/types.ts` — the shape both must satisfy. Because both are typed
-  against it, dropping a field in one language fails the build rather than
-  shipping a half-translated page.
-- `src/lib/locale.tsx` — provider and `useLocale()`; components read content
-  from here rather than importing it.
+| File | Holds |
+|---|---|
+| `src/data/resume.ts` | CV content, English. The editing surface. |
+| `src/data/content.en.ts` · `content.de.ts` | One object per locale |
+| `src/data/types.ts` | The shape both must satisfy |
+| `src/lib/locale.tsx` | Provider and `useLocale()` |
 
-> **The German has not been reviewed by a native speaker.** It was written by
-> Claude. Professional German fails in ways that are invisible to a non-native
-> author — register, false friends, phrasing that reads as translated — and the
-> audience for `/de/` is German employers. Get it read by a native speaker
-> before relying on it in applications.
+Both locales are typed against `Content`, so dropping a field in one language
+fails the build instead of shipping a half-translated page.
 
-> **Both locales currently serve the same English CV PDF.** The German page
-> says "Lebenslauf laden" and hands over an English document. Point
-> `cvPath` in `content.de.ts` at a German CV when you have one.
+> **The German has not been reviewed by a native speaker.** Professional German
+> fails in ways that are invisible to a non-native author, and the audience for
+> `/de/` is German employers. Have it read before relying on it.
+
+> **Both locales serve the same English CV PDF.** Point `cvPath` in
+> `content.de.ts` at a German one when you have it.
+
+---
 
 ## Making it yours
 
-Almost everything is data, not markup.
+Almost everything is data.
 
-### Content
+**Content** — all copy lives in [`src/data/resume.ts`](src/data/resume.ts):
+`identity`, `profile`, `howIWork`, `experience`, `selectedWork`, `skills`,
+`education`. Edit that and the whole site follows.
 
-All copy lives in [`src/data/resume.ts`](src/data/resume.ts):
-
-```ts
-identity   // name, positioning line, location, hook, links
-profile    // the "about" lead and paragraphs
-focusAreas // the three-column capability grid
-experience // roles, dates, bullet points
-projects   // selected work
-skills     // grouped technical skills
-education  // degrees
-```
-
-Edit that file and the whole site follows. No component changes needed.
-
-### Colours and type
-
-Design tokens are CSS custom properties at the top of
-[`src/app/globals.css`](src/app/globals.css) — one block for light, one for dark:
+**Colour and type** — six CSS custom properties at the top of
+[`globals.css`](src/app/globals.css), one block for light and one for dark:
 
 ```css
---bg      /* page background   */
---fg      /* body text         */
---dim     /* secondary text    */
---ink1    /* primary accent    */
---ink2    /* secondary accent  */
---hair    /* hairline borders  */
+--bg  --fg  --dim  --ink1  --ink2  --hair
 ```
 
-Change those six values and the entire site re-themes, including dark mode.
-Fonts are declared in [`src/lib/fonts.ts`](src/lib/fonts.ts).
+Change those and the entire site re-themes, dark mode included.
 
-### CV
+**Chapters** — the array in [`Portfolio.tsx`](src/components/Portfolio.tsx).
+Each entry is an id, a label, a node, and optionally `span: 2` for a chapter
+that needs two screens of width.
 
-Replace `public/cv/fadi-thomas-cv.pdf`. The filename is referenced in
-`Hero.tsx` and `Contact.tsx`; keep it or update both.
+**CV** — replace `public/cv/fadi-thomas-cv.pdf`.
 
-> **Check what you're publishing.** Anything in `public/` is served at a
-> guessable URL and is fully text-extractable. See [Privacy](#privacy) below.
+> Anything in `public/` is served at a guessable URL and is fully
+> text-extractable. See [Privacy](#privacy).
 
 ---
 
@@ -115,73 +153,71 @@ Replace `public/cv/fadi-thomas-cv.pdf`. The filename is referenced in
 ```
 src/
   app/
-    layout.tsx          root layout, metadata, theme bootstrap
-    page.tsx            section composition
-    globals.css         design tokens + base styles
-    favicon.ico         browser tab icon
-    apple-icon.png      iOS home screen icon
-    opengraph-image.png social preview card
-  components/           one file per section
-  data/resume.ts        ← all content lives here
+    (en)/            English root layout + page  → /
+    (de)/de/         German root layout + page   → /de/
+    globals.css      design tokens + base styles
+    favicon.ico · apple-icon.png · opengraph-image.png
+  components/
+    HorizontalDeck   the chapter spine
+    ShapeField       renders one generative pattern
+    ExperienceDial   rotating role selector
+    KineticHero · FlowField · WorkGallery · Cursor · Preloader · …
+  data/
+    resume.ts        ← CV content
+    content.*.ts     per-locale objects
+    types.ts         the contract
   lib/
-    fonts.ts            font loading
-    theme.ts            no-flash theme bootstrap script
-    motion-preference.ts  respects prefers-reduced-motion
-public/
-  cv/                   downloadable CV
-  .nojekyll             stops GitHub Pages running Jekyll on the output
+    shapes.ts        six seeded generators
+    chapter.tsx      per-chapter activity signal
+    locale.tsx · theme.ts · fonts.ts · motion-preference.ts
 ```
-
----
-
-## Deployment
-
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs on every push
-to `main`: `npm ci` → `npm run build` → upload `out/` → deploy to Pages.
-
-**One-time setup:** Settings → Pages → Source → **GitHub Actions**
-(*not* "Deploy from a branch" — that ignores the workflow).
-
-The workflow uses least-privilege permissions (`contents: read`, `pages: write`,
-`id-token: write`) and holds no secrets.
-
----
-
-## Privacy
-
-The site is public, so treat everything in it as public.
-
-- **Email is not in the HTML.** It's split across two fields in `resume.ts` and
-  reassembled in the browser, so it never appears in the static markup that
-  scrapers read.
-- **The CV is a different story.** `public/cv/*.pdf` is served at a fixed,
-  guessable URL and its text — including any phone number and email in the
-  header — extracts in one command. If you don't want a phone number public,
-  publish a CV variant without it and keep the full one for direct applications.
-- **No secrets, keys, or env files** are tracked, and `.gitignore` covers
-  `.env*` and `*.pem`.
 
 ---
 
 ## Accessibility
 
-- Skip link to main content
-- `prefers-reduced-motion` respected throughout (`src/lib/motion-preference.ts`)
-- Minimum 44px touch targets on interactive elements
-- Theme set before first paint, so there is no flash on load
+- Skip link; chapter index is a real `<nav>`; the dial is a listbox with
+  `aria-activedescendant`
+- `prefers-reduced-motion` respected throughout, and the deck itself falls back
+  to vertical
+- Text opacity is only ever set by JavaScript after mount, so a failed script
+  leaves content visible rather than blank
+- Minimum 44px touch targets; theme applied before first paint, so no flash
+- Arrow keys move between chapters but stand down when focus is in a control
+
+---
+
+## Deployment
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs on every
+push to `main`: `npm ci` → `npm run build` → upload `out/` → deploy.
+
+**One-time setup:** Settings → Pages → Source → **GitHub Actions** (*not*
+"Deploy from a branch", which ignores the workflow).
+
+Least-privilege permissions, no secrets.
+
+---
+
+## Privacy
+
+- **Email is not in the HTML.** It's split across two fields and reassembled in
+  the browser, so it never appears in the static markup scrapers read.
+- **The CV is different.** `public/cv/*.pdf` sits at a fixed URL and its text —
+  including any phone number — extracts in one command. If you don't want a
+  phone number public, publish a variant without it.
+- No secrets, keys or env files are tracked.
 
 ---
 
 ## Roadmap
 
-- [ ] **Per-role variants** — build targeted versions of the site from the same
-      content, emphasising different experience per application
-- [ ] **Theme presets** — swap the whole palette from one config value
-- [ ] **Layout options** — alternative section orders and hero treatments
+- [ ] Per-role variants — targeted versions from the same content
+- [ ] Theme presets from one config value
+- [ ] German CV for `/de/`
 
 ---
 
 ## License
 
-Code is MIT. Content — CV, copy, and personal details — is not; please don't
-republish it as your own.
+Code is MIT. Content — CV, copy, personal details — is not.
