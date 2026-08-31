@@ -27,8 +27,10 @@ export default function WorkGallery() {
     if (reduced) return;
     const r = wrap.current?.getBoundingClientRect();
     if (!r) return;
-    mx.set(e.clientX - r.left);
-    my.set(e.clientY - r.top);
+    // Offset up and to the right of the pointer. Centring the panel on the
+    // cursor put it straight on top of the row being read.
+    mx.set(e.clientX - r.left + 28);
+    my.set(e.clientY - r.top - 150);
   };
 
   return (
@@ -78,21 +80,15 @@ export default function WorkGallery() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.94 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              // translateX/Y live in the same `transform` string Motion writes,
-              // so the centring offset has to be declared here — a Tailwind
-              // -translate-x-1/2 class would be overwritten and silently lost.
-              style={{ x: px, y: py, translateX: "-50%", translateY: "-50%" }}
+              style={{ x: px, y: py }}
               className="pointer-events-none absolute left-0 top-0 z-20 hidden md:block"
             >
-              <div className="flex h-36 w-56 flex-col justify-between border border-ink1/30 bg-ink1 p-4 text-on-ink shadow-2xl">
-                <span className="font-mono text-[9px] uppercase tracking-[0.18em] opacity-80">
+              <div className="flex w-64 flex-col gap-2 border border-ink1/40 bg-ink1 p-4 text-on-ink shadow-2xl">
+                <span className="font-mono text-[9px] uppercase tracking-[0.18em] opacity-70">
                   {selectedWork[active].tag}
                 </span>
-                <span className="font-display text-2xl font-extrabold leading-[0.95] tracking-tight">
-                  {selectedWork[active].title}
-                </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.18em] opacity-80">
-                  {selectedWork[active].stack.split(" · ")[0]}
+                <span className="font-mono text-[11px] leading-[1.7]">
+                  {selectedWork[active].stack}
                 </span>
               </div>
             </motion.div>
