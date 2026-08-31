@@ -3,10 +3,11 @@
 import { useEffect, useRef } from "react";
 import { animate, createTimeline, splitText, stagger, utils } from "animejs";
 import { motion, useScroll, useTransform } from "motion/react";
-import { identity } from "@/data/resume";
+
 import { usePrefersReducedMotion } from "@/lib/motion-preference";
 import FlowField from "./FlowField";
 import Magnetic from "./Magnetic";
+import { useLocale } from "@/lib/locale";
 
 /**
  * Hero: masked per-character type reveal over a generative flow field, with the
@@ -19,6 +20,8 @@ import Magnetic from "./Magnetic";
  * read character by character.
  */
 export default function KineticHero() {
+  const { t } = useLocale();
+  const identity = t.identity;
   const root = useRef<HTMLElement>(null);
   const reduced = usePrefersReducedMotion();
 
@@ -118,11 +121,11 @@ export default function KineticHero() {
             <Magnetic>
               <a
                 data-rise
-                href="/cv/fadi-thomas-cv.pdf"
-                download="Fadi-Thomas-CV.pdf"
+                href={t.cvPath}
+                download={t.cvFilename}
                 className="group relative inline-flex min-h-12 items-center gap-2 overflow-hidden bg-ink1 px-6 py-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-on-ink no-underline"
               >
-                <span className="relative z-10">Download CV</span>
+                <span className="relative z-10">{t.ui.downloadCv}</span>
                 <span className="relative z-10 transition-transform duration-300 group-hover:translate-y-0.5">↓</span>
                 <span className="absolute inset-0 origin-bottom scale-y-0 bg-ink2 transition-transform duration-[450ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-y-100" />
               </a>
@@ -135,7 +138,7 @@ export default function KineticHero() {
                 className="group relative inline-flex min-h-12 items-center overflow-hidden border-2 border-fg px-6 py-4 font-mono text-[10px] font-medium uppercase tracking-[0.14em] !text-fg no-underline"
               >
                 <span className="relative z-10 transition-colors duration-300 group-hover:text-on-ink">
-                  Get in touch
+                  {t.ui.getInTouch}
                 </span>
                 <span className="absolute inset-0 origin-left scale-x-0 bg-fg transition-transform duration-[450ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-x-100" />
               </a>
@@ -151,12 +154,12 @@ export default function KineticHero() {
         </div>
       </motion.div>
 
-      <ScrollCue reduced={reduced} />
+      <ScrollCue reduced={reduced} label={t.ui.scroll} />
     </section>
   );
 }
 
-function ScrollCue({ reduced }: { reduced: boolean }) {
+function ScrollCue({ reduced, label }: { reduced: boolean; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -182,7 +185,7 @@ function ScrollCue({ reduced }: { reduced: boolean }) {
       className="pointer-events-none absolute bottom-[clamp(20px,4vh,44px)] left-[clamp(18px,5vw,64px)] z-10 flex items-center gap-3"
     >
       <span data-cue-line className="block h-10 w-px bg-fg/50" />
-      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">Scroll</span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">{label}</span>
     </div>
   );
 }

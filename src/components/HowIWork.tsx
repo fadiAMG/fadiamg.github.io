@@ -1,7 +1,12 @@
+"use client";
+
 import SectionHeading from "./SectionHeading";
-import { howIWork } from "@/data/resume";
+import { useLocale } from "@/lib/locale";
+
 
 export default function HowIWork() {
+  const { t } = useLocale();
+  const howIWork = t.howIWork;
   return (
     <section className="mx-auto max-w-[1500px] px-[clamp(18px,5vw,64px)] py-[clamp(40px,8vh,100px)]">
       <SectionHeading number="02" label="How I work" />

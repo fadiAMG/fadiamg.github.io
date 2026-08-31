@@ -1,7 +1,12 @@
+"use client";
+
 import SectionHeading from "./SectionHeading";
-import { certifications, education, languages } from "@/data/resume";
+import { useLocale } from "@/lib/locale";
+
 
 export default function Education() {
+  const { t } = useLocale();
+  const { certifications, education, languages } = t;
   return (
     <section className="mx-auto max-w-[1500px] px-[clamp(18px,5vw,64px)] py-[clamp(40px,8vh,100px)]">
       <SectionHeading number="06" label="Education & recognition" />

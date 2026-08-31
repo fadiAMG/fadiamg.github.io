@@ -2,8 +2,9 @@
 
 import { useRef, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring } from "motion/react";
-import { selectedWork } from "@/data/resume";
+
 import { usePrefersReducedMotion } from "@/lib/motion-preference";
+import { useLocale } from "@/lib/locale";
 
 /**
  * Hover-reveal project index.
@@ -14,6 +15,8 @@ import { usePrefersReducedMotion } from "@/lib/motion-preference";
  * so nothing is hidden behind a hover state on touch or keyboard.
  */
 export default function WorkGallery() {
+  const { t } = useLocale();
+  const selectedWork = t.selectedWork;
   const [active, setActive] = useState<number | null>(null);
   const reduced = usePrefersReducedMotion();
   const wrap = useRef<HTMLDivElement>(null);

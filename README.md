@@ -40,6 +40,29 @@ Node 22+ recommended (the deploy workflow pins 22).
 
 ---
 
+## Languages
+
+The site ships in English at `/` and German at `/de/`, each statically built
+with its own `<html lang>` and reciprocal `hreflang` tags.
+
+- `src/data/resume.ts` — CV content, English. Still the single editing surface.
+- `src/data/content.en.ts` / `content.de.ts` — one object per locale.
+- `src/data/types.ts` — the shape both must satisfy. Because both are typed
+  against it, dropping a field in one language fails the build rather than
+  shipping a half-translated page.
+- `src/lib/locale.tsx` — provider and `useLocale()`; components read content
+  from here rather than importing it.
+
+> **The German has not been reviewed by a native speaker.** It was written by
+> Claude. Professional German fails in ways that are invisible to a non-native
+> author — register, false friends, phrasing that reads as translated — and the
+> audience for `/de/` is German employers. Get it read by a native speaker
+> before relying on it in applications.
+
+> **Both locales currently serve the same English CV PDF.** The German page
+> says "Lebenslauf laden" and hands over an English document. Point
+> `cvPath` in `content.de.ts` at a German CV when you have one.
+
 ## Making it yours
 
 Almost everything is data, not markup.

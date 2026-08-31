@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { experience } from "@/data/resume";
+
 import { usePrefersReducedMotion } from "@/lib/motion-preference";
+import { useLocale } from "@/lib/locale";
 
 /**
  * Experience as a rotating dial.
@@ -27,6 +28,8 @@ const STEP = 4.2; // degrees between adjacent roles — small enough that the
 // offset grows as RADIUS·sin(θ) and the panel is only one viewport tall.
 
 export default function ExperienceDial() {
+  const { t } = useLocale();
+  const experience = t.experience;
   const [active, setActive] = useState(0);
   const reduced = usePrefersReducedMotion();
   const listRef = useRef<HTMLDivElement>(null);
@@ -66,7 +69,7 @@ export default function ExperienceDial() {
         <div
           ref={listRef}
           role="listbox"
-          aria-label="Roles"
+          aria-label={t.ui.rolesLabel}
           aria-activedescendant={`role-${active}`}
           tabIndex={0}
           className="relative h-full w-full outline-none"
@@ -132,7 +135,7 @@ export default function ExperienceDial() {
           className="absolute bottom-0 left-0 font-mono text-[9px] uppercase tracking-[0.16em] text-dim"
         >
           {String(active + 1).padStart(2, "0")} / {String(experience.length).padStart(2, "0")}
-          <span className="ml-3 opacity-60">Select a role</span>
+          <span className="ml-3 opacity-60">{t.ui.selectRole}</span>
         </p>
       </div>
 

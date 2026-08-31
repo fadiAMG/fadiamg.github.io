@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import SectionHeading from "./SectionHeading";
 import { usePrefersReducedMotion } from "@/lib/motion-preference";
-import { identity } from "@/data/resume";
+import { useLocale } from "@/lib/locale";
+
 
 export default function Contact() {
+  const { t } = useLocale();
+  const identity = t.identity;
   const reduced = usePrefersReducedMotion();
   const [email, setEmail] = useState<{ text: string; href: string } | null>(null);
 
@@ -29,7 +32,7 @@ export default function Contact() {
       </h2>
       <div className="mt-[clamp(28px,5vh,56px)] grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-[clamp(16px,3vw,40px)] border-t border-hair pt-[22px]">
         <div className="grid gap-2">
-          <span className="font-mono text-[10px] font-light uppercase text-dim">Email</span>
+          <span className="font-mono text-[10px] font-light uppercase text-dim">{t.ui.email}</span>
           <a
             href={email?.href ?? "#"}
             className="inline-flex min-h-11 items-center py-2.5 font-mono text-xs font-medium break-all no-underline transition-colors hover:text-ink2"
@@ -39,7 +42,7 @@ export default function Contact() {
           </a>
         </div>
         <div className="grid gap-2">
-          <span className="font-mono text-[10px] font-light uppercase text-dim">LinkedIn</span>
+          <span className="font-mono text-[10px] font-light uppercase text-dim">{t.ui.linkedin}</span>
           <a
             href={identity.linkedinUrl}
             rel="noopener"
@@ -50,18 +53,18 @@ export default function Contact() {
           </a>
         </div>
         <div className="grid gap-2">
-          <span className="font-mono text-[10px] font-light uppercase text-dim">Location</span>
+          <span className="font-mono text-[10px] font-light uppercase text-dim">{t.ui.locationLabel}</span>
           <span className="font-mono text-xs font-medium">{identity.locationShort}</span>
         </div>
         <div className="grid gap-2">
-          <span className="font-mono text-[10px] font-light uppercase text-dim">CV</span>
+          <span className="font-mono text-[10px] font-light uppercase text-dim">{t.ui.cv}</span>
           <a
-            href="/cv/fadi-thomas-cv.pdf"
-            download="Fadi-Thomas-CV.pdf"
+            href={t.cvPath}
+            download={t.cvFilename}
             className="inline-flex min-h-11 items-center py-2.5 font-mono text-xs font-medium no-underline transition-colors hover:text-ink2"
             style={{ color: "var(--ink1)" }}
           >
-            Download PDF ↓
+            {t.ui.downloadPdf} ↓
           </a>
         </div>
       </div>
