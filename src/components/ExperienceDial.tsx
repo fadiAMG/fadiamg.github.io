@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 
 import { usePrefersReducedMotion } from "@/lib/motion-preference";
 import { useLocale } from "@/lib/locale";
+import { useChapter } from "@/lib/chapter";
 
 /**
  * Experience as a rotating dial.
@@ -20,6 +21,11 @@ import { useLocale } from "@/lib/locale";
  *
  * Everything is sized from the panel's own height, so the whole component
  * always fits its chapter regardless of how many roles there are.
+ *
+ * The dial is a desktop affordance and depends on that fixed height: its items
+ * are absolutely positioned on an arc, so a container without a height collapses
+ * and stacks every role on the same point. Outside the deck — phones, and
+ * anyone on reduced motion — it renders as a plain selectable list instead.
  */
 
 const RADIUS = 1250; // px — large, so the arc reads as a gentle curve
@@ -33,6 +39,7 @@ export default function ExperienceDial() {
   const [active, setActive] = useState(0);
   const reduced = usePrefersReducedMotion();
   const listRef = useRef<HTMLDivElement>(null);
+  const { inDeck } = useChapter();
   const role = experience[active];
 
   const go = useCallback((i: number) => {
@@ -51,6 +58,73 @@ export default function ExperienceDial() {
     el.addEventListener("keydown", onKey);
     return () => el.removeEventListener("keydown", onKey);
   }, [active, go]);
+
+  const detail = (
+    <>
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[9px] uppercase tracking-[0.16em] text-dim">
+        <span className="text-ink2">{role.dates}</span>
+        {role.location && <span>{role.location}</span>}
+      </div>
+      <h3 className="m-0 font-display text-[clamp(20px,2.4vw,38px)] font-extrabold leading-[1.02] tracking-[-0.035em]">
+        {role.title}
+      </h3>
+      <p className="m-0 max-w-[52ch] text-[clamp(13px,1.05vw,15px)] leading-[1.5] text-dim">
+        {role.summary}
+      </p>
+      <ul className="m-0 grid list-none gap-2 p-0">
+        {role.owned.slice(0, 3).map((item) => (
+          <li key={item} className="grid grid-cols-[auto_1fr] gap-2.5 text-[13px] leading-[1.5]">
+            <span aria-hidden="true" className="mt-[0.55em] block h-1 w-1 shrink-0 bg-ink1" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+      {role.impact && (
+        <p className="m-0 border-l-2 border-ink2 pl-3 text-[13px] leading-[1.5]">{role.impact}</p>
+      )}
+      <p className="m-0 font-mono text-[9px] uppercase leading-[1.7] tracking-[0.12em] text-dim">
+        {role.stack.join(" · ")}
+      </p>
+    </>
+  );
+
+  // ---- stacked layout: phones, and anyone on reduced motion ----
+  if (!inDeck) {
+    return (
+      <div className="w-full">
+        <ul className="m-0 grid list-none gap-0 border-t border-hair p-0">
+          {experience.map((r, i) => (
+            <li key={r.company + r.dates} className="border-b border-hair">
+              <button
+                type="button"
+                onClick={() => go(i)}
+                aria-expanded={i === active}
+                className="flex w-full flex-col items-start gap-0.5 py-4 text-left"
+              >
+                <span
+                  className={`font-mono text-[9px] uppercase tracking-[0.16em] ${
+                    i === active ? "text-ink2" : "text-dim"
+                  }`}
+                >
+                  {r.dates}
+                </span>
+                <span className="font-display text-[19px] font-extrabold leading-[1.1] tracking-[-0.03em]">
+                  {r.company}
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-dim">
+                  {r.title}
+                </span>
+              </button>
+
+              {i === active && (
+                <div className="grid gap-3 border-l-2 border-ink1/30 pb-6 pl-4">{detail}</div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
 
   return (
     <div className="grid h-full w-full grid-cols-1 items-center gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-[clamp(24px,4vw,72px)]">

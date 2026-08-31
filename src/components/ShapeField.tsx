@@ -103,7 +103,10 @@ export default function ShapeField({
       }}
       className={`pointer-events-none absolute inset-0 ${className}`}
     >
-      <svg viewBox={VIEWBOX} className="h-full w-full" preserveAspectRatio="xMidYMid slice">
+      <svg viewBox={VIEWBOX} className="h-full w-full" // `meet`, not `slice`: the generators draw a 1:1 composition, and slicing
+        // it to cover a tall phone viewport magnifies a corner of the pattern into
+        // a few enormous arcs. `meet` keeps the whole composition readable.
+        preserveAspectRatio="xMidYMid meet">
         <g fill="none" stroke="var(--ink1)" strokeLinecap="round">
           {prims.map((p, i) =>
             p.k === "path" ? (

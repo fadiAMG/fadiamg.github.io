@@ -213,7 +213,14 @@ export default function HorizontalDeck({ chapters }: { chapters: Chapter[] }) {
     return (
       <>
         {chapters.map((c, i) => (
-          <section key={c.id} id={c.id}>
+          // relative + overflow-hidden so each chapter's absolutely-positioned
+          // pattern is clipped to its own section instead of bleeding across
+          // the whole page.
+          <section
+            key={c.id}
+            id={c.id}
+            className="relative overflow-hidden px-[clamp(18px,5vw,64px)] py-[clamp(48px,9vh,96px)]"
+          >
             <ChapterProvider index={i} active inDeck={false}>
               {c.node}
             </ChapterProvider>
@@ -233,7 +240,7 @@ export default function HorizontalDeck({ chapters }: { chapters: Chapter[] }) {
                 key={c.id}
                 id={c.id}
                 style={{ width: `${(c.span ?? 1) * 100}vw` }}
-                className="relative flex h-full shrink-0 flex-col justify-center overflow-hidden px-[clamp(24px,5vw,80px)] pb-[clamp(90px,12vh,130px)] pt-[clamp(70px,10vh,110px)]"
+                className="relative flex h-full shrink-0 flex-col justify-center overflow-hidden px-[clamp(24px,5vw,80px)] pb-[clamp(90px,12vh,130px)] pt-[clamp(70px,10vh,110px)] [&_section]:!my-0 [&_section]:!py-0"
               >
                 <ChapterProvider index={i} active={i === active} inDeck>
                   {c.node}

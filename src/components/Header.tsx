@@ -18,7 +18,7 @@ export default function Header() {
       data-print-hide
       className="sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-hair bg-bg px-[clamp(12px,5vw,64px)] py-3.5 font-mono text-[10px] font-light uppercase text-dim sm:gap-4"
     >
-      <span className="text-fg">{identity.name}</span>
+      <span className="shrink-0 whitespace-nowrap text-fg">{identity.name}</span>
       {/* Tighter at small widths: adding the language switch pushed this nav
           past a 390px viewport and reintroduced horizontal overflow. */}
       <nav className="flex items-center gap-[clamp(6px,2vw,22px)]">
@@ -26,7 +26,10 @@ export default function Header() {
           <a
             key={link.href}
             href={link.href}
-            className="inline-flex min-h-11 items-center px-0.5 !text-dim no-underline transition-colors hover:!text-ink2 sm:px-1"
+            // Hidden below sm: name + three anchors + language + theme does not
+            // fit 390px, and on a phone the page scrolls vertically anyway, so
+            // the anchors are the least load-bearing of the five.
+            className="hidden min-h-11 items-center px-0.5 !text-dim no-underline transition-colors hover:!text-ink2 sm:inline-flex sm:px-1"
           >
             {link.label}
           </a>

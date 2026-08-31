@@ -19,12 +19,11 @@ import WorkGallery from "@/components/WorkGallery";
 import { LocaleProvider, useLocale, type Lang } from "@/lib/locale";
 
 /**
- * Chapter content sits in a fixed-height panel, so the section components'
- * own vertical padding would double-count against the viewport and push
- * content under the chapter index. Neutralised here rather than in each
- * component, which still needs its padding in the vertical fallback layout.
+ * Chapter content wrapper. The padding reset that a fixed-height deck panel
+ * needs lives on the deck's own section instead — applying it here stripped
+ * the spacing in the vertical fallback too, collapsing every section together.
  */
-const PANEL = "relative z-10 mx-auto w-full max-w-[1300px] [&_section]:py-0 [&_section]:my-0";
+const PANEL = "relative z-10 mx-auto w-full max-w-[1300px]";
 
 export default function Portfolio({ lang }: { lang: Lang }) {
   return (
@@ -90,7 +89,8 @@ function Deck() {
       node: (
         <>
           <ShapeField name="isometric" seed={5} className="opacity-[0.4]" drift={-80} mask="edges" />
-          <div className={`${PANEL} flex h-full min-h-0 flex-col`}>
+          {/* h-full only matters in the deck, where the panel has a fixed height. */}
+          <div className={`${PANEL} flex min-h-0 flex-col lg:h-full`}>
             <SectionHeading number="03" label={s.experience} />
             <div className="mt-[clamp(10px,1.6vh,24px)] min-h-0 flex-1">
               <ExperienceDial />
