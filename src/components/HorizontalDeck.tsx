@@ -54,16 +54,17 @@ export default function HorizontalDeck({ chapters }: { chapters: Chapter[] }) {
   const desktop = useDesktop();
   const horizontal = desktop && !reduced;
 
+  // Derived, not stored: zeroing the measured distance via setState inside the
+  // measure effect would be a cascading render for no gain.
+  const effectiveDistance = horizontal ? distance : 0;
+
   const { scrollYProgress } = useScroll({ target: outer });
-  const rawX = useTransform(scrollYProgress, [0, 1], [0, -distance]);
+  const rawX = useTransform(scrollYProgress, [0, 1], [0, -effectiveDistance]);
   const x = useSpring(rawX, { stiffness: 260, damping: 42, mass: 0.4 });
 
   // Measure how far the track has to travel: its full width minus one viewport.
   useEffect(() => {
-    if (!horizontal) {
-      setDistance(0);
-      return;
-    }
+    if (!horizontal) return;
     const measure = () => {
       const t = track.current;
       if (!t) return;

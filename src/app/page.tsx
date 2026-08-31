@@ -1,7 +1,7 @@
 import Contact from "@/components/Contact";
 import Cursor from "@/components/Cursor";
 import Education from "@/components/Education";
-import Experience from "@/components/Experience";
+import ExperienceDial from "@/components/ExperienceDial";
 import GrainOverlay from "@/components/GrainOverlay";
 import Header from "@/components/Header";
 import HorizontalDeck, { type Chapter } from "@/components/HorizontalDeck";
@@ -68,19 +68,14 @@ const CHAPTERS: Chapter[] = [
   {
     id: "experience",
     label: "Experience",
-    // Eight roles do not fit one viewport-height panel; give it two screens of
-    // travel and split the list into columns.
-    span: 2,
     node: (
       <>
-        <ShapeField name="isometric" seed={5} className="opacity-[0.42]" drift={-80} mask="edges" />
-        {/* Two viewports of width, but still one viewport of height — so the
-            role list is tightened rather than columned. The spine SVG inside
-            Experience is absolutely positioned, which rules out CSS columns. */}
-        <div
-          className={`${PANEL} max-w-[1500px] [&_h3]:!text-[clamp(1.05rem,1.7vw,1.6rem)] [&_p]:!text-[0.92rem] [&_p]:!leading-[1.5] [&_.grid]:!gap-3`}
-        >
-          <Experience />
+        <ShapeField name="isometric" seed={5} className="opacity-[0.4]" drift={-80} mask="edges" />
+        <div className={`${PANEL} flex h-full min-h-0 flex-col`}>
+          <SectionHeading number="03" label="Experience" />
+          <div className="mt-[clamp(10px,1.6vh,24px)] min-h-0 flex-1">
+            <ExperienceDial />
+          </div>
         </div>
       </>
     ),
