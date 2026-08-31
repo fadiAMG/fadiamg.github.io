@@ -20,6 +20,16 @@ import { usePrefersReducedMotion } from "@/lib/motion-preference";
 
 const DESKTOP = "(min-width: 1024px) and (pointer: fine)";
 
+/**
+ * Vertical scroll distance, in vh, spent crossing one chapter. Lower means
+ * less scrolling per chapter; too low and the travel feels twitchy. This is
+ * the single knob for how laborious the deck feels.
+ */
+const TRAVEL_VH = 82;
+
+/** How close to a chapter counts as "arrived" and needs no snap, in progress units. */
+const SNAP_EPSILON = 0.02;
+
 function useDesktop() {
   return useSyncExternalStore(
     (cb) => {
@@ -48,6 +58,9 @@ export default function HorizontalDeck({ chapters }: { chapters: Chapter[] }) {
   const track = useRef<HTMLDivElement>(null);
   const [distance, setDistance] = useState(0);
   const [active, setActive] = useState(0);
+  // True while we are driving the scroll ourselves, so the settle handler
+  // doesn't fight its own smooth-scroll.
+  const snapping = useRef(false);
 
   const totalSpan = chapters.reduce((n, c) => n + (c.span ?? 1), 0);
   const reduced = usePrefersReducedMotion();
@@ -60,7 +73,10 @@ export default function HorizontalDeck({ chapters }: { chapters: Chapter[] }) {
 
   const { scrollYProgress } = useScroll({ target: outer });
   const rawX = useTransform(scrollYProgress, [0, 1], [0, -effectiveDistance]);
-  const x = useSpring(rawX, { stiffness: 260, damping: 42, mass: 0.4 });
+  // Stiffer and lighter than before: the old spring kept drifting for a beat
+  // after the wheel stopped, which read as the page still deciding where it
+  // wanted to be.
+  const x = useSpring(rawX, { stiffness: 420, damping: 46, mass: 0.28 });
 
   // Measure how far the track has to travel: its full width minus one viewport.
   useEffect(() => {
@@ -99,22 +115,84 @@ export default function HorizontalDeck({ chapters }: { chapters: Chapter[] }) {
     return unsub;
   }, [horizontal, scrollYProgress, chapters, totalSpan]);
 
-  const goTo = useCallback(
+  /** Document scroll position at which chapter `i` is exactly in frame. */
+  const scrollTopFor = useCallback(
     (i: number) => {
       const el = outer.current;
-      if (!el) return;
+      if (!el) return 0;
+      const travel = el.offsetHeight - window.innerHeight;
+      const before = chapters.slice(0, i).reduce((n, c) => n + (c.span ?? 1), 0);
+      const frac = totalSpan > 1 ? before / (totalSpan - 1) : 0;
+      return el.offsetTop + Math.min(frac, 1) * travel;
+    },
+    [chapters, totalSpan],
+  );
+
+  const goTo = useCallback(
+    (i: number) => {
+      if (!outer.current) return;
       if (!horizontal) {
         document.getElementById(chapters[i].id)?.scrollIntoView({ behavior: "smooth" });
         return;
       }
-      const top = el.offsetTop;
-      const travel = el.offsetHeight - window.innerHeight;
-      const before = chapters.slice(0, i).reduce((n, c) => n + (c.span ?? 1), 0);
-      const frac = totalSpan > 1 ? before / (totalSpan - 1) : 0;
-      window.scrollTo({ top: top + Math.min(frac, 1) * travel, behavior: "smooth" });
+      snapping.current = true;
+      window.scrollTo({ top: scrollTopFor(i), behavior: "smooth" });
+      window.setTimeout(() => { snapping.current = false; }, 700);
     },
-    [horizontal, chapters, totalSpan],
+    [horizontal, chapters, scrollTopFor],
   );
+
+  /**
+   * Settle onto the nearest chapter once scrolling stops.
+   *
+   * Without this you can come to rest halfway between two chapters, looking at
+   * the tail of one and the head of the next with dead space between them —
+   * and every chapter costs a full screen of scrolling to cross, so most
+   * scrolling is spent in that in-between state.
+   *
+   * Done in JS rather than CSS scroll-snap deliberately: `scroll-snap-type:
+   * mandatory` on the scroll root fights the sticky viewport this deck is
+   * built on, and `proximity` fires too inconsistently to rely on. Snapping
+   * only after scrolling has stopped never interrupts an active gesture.
+   */
+  useEffect(() => {
+    if (!horizontal) return;
+    let timer = 0;
+
+    const settle = () => {
+      if (snapping.current) return;
+      const p = scrollYProgress.get();
+      const travelled = p * (totalSpan - 1);
+
+      // Nearest chapter by cumulative span.
+      let best = 0;
+      let bestDist = Infinity;
+      let acc = 0;
+      for (let i = 0; i < chapters.length; i++) {
+        const d = Math.abs(travelled - acc);
+        if (d < bestDist) { bestDist = d; best = i; }
+        acc += chapters[i].span ?? 1;
+      }
+
+      const target = scrollTopFor(best);
+      if (Math.abs(window.scrollY - target) < window.innerHeight * SNAP_EPSILON) return;
+
+      snapping.current = true;
+      window.scrollTo({ top: target, behavior: "smooth" });
+      window.setTimeout(() => { snapping.current = false; }, 700);
+    };
+
+    const onScroll = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(settle, 140);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [horizontal, scrollYProgress, chapters, totalSpan, scrollTopFor]);
 
   // Arrow keys step between chapters, but only when focus isn't in a control —
   // otherwise we'd steal arrow keys from anything interactive.
@@ -144,7 +222,7 @@ export default function HorizontalDeck({ chapters }: { chapters: Chapter[] }) {
 
   return (
     <>
-      <div ref={outer} style={{ height: `${totalSpan * 105}vh` }} className="relative">
+      <div ref={outer} style={{ height: `${totalSpan * TRAVEL_VH}vh` }} className="relative">
         <div className="sticky top-0 h-[100svh] overflow-hidden">
           <motion.div ref={track} style={{ x }} className="flex h-full w-max will-change-transform">
             {chapters.map((c) => (
